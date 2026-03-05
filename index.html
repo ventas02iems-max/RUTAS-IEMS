@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IEMS — Control de Rutas v3</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d1117;--surface:#161b22;--surface2:#1e2530;--border:#30363d;--accent:#f0a500;--green:#3fb950;--red:#f85149;--blue:#58a6ff;--text:#e6edf3;--text2:#8b949e;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+header{background:var(--surface);border-bottom:2px solid var(--accent);padding:0 20px;display:flex;align-items:center;gap:14px;height:60px;position:sticky;top:0;z-index:100;}
+.logo{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;letter-spacing:1px;}
+.logo span{color:var(--accent);}
+.subtitle{color:var(--text2);font-size:12px;border-left:2px solid var(--border);padding-left:14px;}
+.hdate{margin-left:auto;font-size:12px;color:var(--text2);}
+nav{background:var(--surface2);border-bottom:1px solid var(--border);display:flex;padding:0 20px;overflow-x:auto;}
+.nb{background:none;border:none;color:var(--text2);font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:600;padding:13px 18px;cursor:pointer;border-bottom:3px solid transparent;transition:all .2s;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;}
+.nb:hover{color:var(--text);}.nb.active{color:var(--accent);border-bottom-color:var(--accent);}
+main{padding:20px;max-width:1400px;margin:0 auto;}
+.view{display:none;}.view.active{display:block;}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;border-top:3px solid;}
+.stat-card .lbl{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text2);margin-bottom:6px;}
+.stat-card .val{font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:800;line-height:1;}
+.stat-card .sub{font-size:11px;color:var(--text2);margin-top:4px;}
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+@media(max-width:800px){.dash-grid{grid-template-columns:1fr;}}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px;}
+.card h3{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text2);margin-bottom:14px;}
+/* RUTAS */
+.rh{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+.rh h2{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:800;}
+.srch{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-family:'Barlow',sans-serif;font-size:14px;width:210px;}
+.srch:focus{outline:none;border-color:var(--accent);}
+.rtabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.rtab{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 14px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text2);transition:all .2s;display:flex;align-items:center;gap:6px;}
+.rtab:hover{color:var(--text);}
+.rtab .bdg{background:rgba(0,0,0,.25);padding:1px 7px;border-radius:20px;font-size:11px;}
+.rbar{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:12px;font-size:12px;flex-wrap:wrap;}
+.rbar-prog{flex:1;min-width:100px;height:7px;background:var(--border);border-radius:4px;overflow:hidden;}
+.rbar-fill{height:100%;border-radius:4px;transition:width .4s;}
+/* CARDS */
+.cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;}
+.ccard{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 14px 14px 18px;position:relative;transition:border-color .2s;}
+.ccard.done{border-color:rgba(63,185,80,.5);background:#0f1c12;}
+.cbar{position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:10px 0 0 10px;}
+.co-name{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;line-height:1.2;margin-bottom:1px;}
+.co-full{font-size:10px;color:var(--text2);margin-bottom:5px;}
+.co-addr{font-size:11px;color:var(--text2);display:flex;align-items:flex-start;gap:4px;margin-bottom:3px;}
+.co-phone{font-size:11px;color:var(--blue);display:flex;align-items:center;gap:4px;margin-bottom:3px;}
+.chk-wrap{display:flex;gap:10px;align-items:flex-start;}
+.chk{width:26px;height:26px;border-radius:6px;border:2px solid var(--border);background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;flex-shrink:0;margin-top:2px;}
+.chk.done{background:var(--green);border-color:var(--green);}
+/* ACTION BUTTONS ROW */
+.action-row{display:flex;gap:6px;margin-top:9px;}
+.maps-btn{flex:0 0 auto;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.3);border-radius:7px;padding:7px 10px;color:var(--blue);font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;display:flex;align-items:center;gap:5px;transition:all .2s;white-space:nowrap;}
+.maps-btn:hover{background:rgba(88,166,255,.2);}
+.reg-btn{flex:1;background:rgba(240,165,0,.1);border:1px solid rgba(240,165,0,.3);border-radius:7px;padding:7px 0;color:var(--accent);font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;text-align:center;}
+.reg-btn:hover{background:rgba(240,165,0,.2);}
+.edit-route-btn{flex:0 0 auto;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:7px 9px;color:var(--text2);font-size:12px;cursor:pointer;transition:all .2s;display:flex;align-items:center;}
+.edit-route-btn:hover{border-color:var(--accent);color:var(--accent);}
+.done-badge{margin-top:8px;padding:8px 10px;background:rgba(0,0,0,.3);border-radius:7px;border:1px solid rgba(63,185,80,.2);}
+.done-badge .dtit{font-size:10px;color:var(--green);font-weight:700;margin-bottom:3px;letter-spacing:.5px;}
+.done-badge .dinfo{font-size:12px;color:var(--text2);}
+.undo-btn{background:none;border:none;color:var(--red);font-size:11px;cursor:pointer;padding:0;margin-top:4px;font-family:inherit;}
+/* PROG BARS */
+.prog-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.prog-name{font-size:13px;font-weight:600;min-width:90px;}
+.prog-bar{flex:1;height:7px;background:var(--border);border-radius:4px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:4px;}
+.prog-ct{font-size:12px;color:var(--text2);min-width:60px;text-align:right;}
+.act-item{display:flex;align-items:center;gap:10px;padding:9px 11px;background:var(--surface2);border-radius:7px;margin-bottom:7px;font-size:12px;}
+.act-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+/* CALENDAR */
+.cal-layout{display:grid;grid-template-columns:1fr 320px;gap:20px;}
+@media(max-width:850px){.cal-layout{grid-template-columns:1fr;}}
+.cal-wrap{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px;}
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.cal-nav h3{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;text-transform:uppercase;}
+.cal-arr{background:var(--surface2);border:1px solid var(--border);color:var(--text);width:34px;height:34px;border-radius:7px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+.cal-arr:hover{border-color:var(--accent);color:var(--accent);}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.cal-dow{text-align:center;font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;padding:7px 0;}
+.cal-day{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600;border:1px solid transparent;transition:all .2s;position:relative;gap:2px;}
+.cal-day:hover{background:var(--surface2);border-color:var(--border);}
+.cal-day.other{color:var(--border);pointer-events:none;}
+.cal-day.today{background:var(--surface2);border-color:var(--accent);color:var(--accent);}
+.cal-day.sel{background:var(--accent);color:#000;border-color:var(--accent);}
+.ddots{display:flex;gap:2px;flex-wrap:wrap;justify-content:center;max-width:22px;}
+.ddot{width:4px;height:4px;border-radius:50%;}
+.cal-detail{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px;}
+.cal-detail h3{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:800;text-transform:uppercase;margin-bottom:14px;color:var(--accent);}
+.del-item{display:flex;align-items:center;gap:9px;padding:9px 11px;background:var(--surface2);border-radius:7px;margin-bottom:7px;}
+.del-chk{width:18px;height:18px;border-radius:4px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:all .15s;}
+.del-chk.done{background:var(--green);border-color:var(--green);}
+.add-btn{width:100%;background:var(--surface2);border:1px dashed var(--border);border-radius:7px;padding:10px;color:var(--text2);cursor:pointer;font-family:'Barlow',sans-serif;font-size:13px;margin-top:7px;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:7px;}
+.add-btn:hover{border-color:var(--accent);color:var(--accent);}
+/* RESUMEN */
+.sum-ctrl{display:flex;gap:10px;margin-bottom:18px;align-items:center;flex-wrap:wrap;}
+.sum-ctrl h2{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:800;}
+.per-btn{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:7px 14px;cursor:pointer;font-family:'Barlow',sans-serif;font-size:13px;color:var(--text2);transition:all .2s;}
+.per-btn.active{background:var(--accent);color:#000;border-color:var(--accent);font-weight:600;}
+.sum-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:18px;}
+.sum-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px;}
+.sum-card h4{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:800;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.sum-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px;}
+.sum-row:last-child{border-bottom:none;}
+.exp-btn{background:var(--accent);color:#000;border:none;border-radius:7px;padding:9px 18px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;margin-left:auto;transition:all .2s;}
+.exp-btn:hover{background:#ffb700;}
+/* MODALS */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:200;align-items:center;justify-content:center;padding:16px;}
+.overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;width:100%;}
+.modal h3{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;margin-bottom:18px;}
+.mrow{margin-bottom:12px;}
+.mrow label{display:block;font-size:11px;color:var(--text2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px;}
+.mrow select,.mrow input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:9px 11px;color:var(--text);font-family:'Barlow',sans-serif;font-size:14px;}
+.mrow select:focus,.mrow input:focus{outline:none;border-color:var(--accent);}
+.mactions{display:flex;gap:9px;margin-top:18px;}
+.mbtn{flex:1;border:none;border-radius:7px;padding:11px;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;}
+.mbtn-g{background:var(--green);color:#fff;}.mbtn-g:hover{opacity:.9;}
+.mbtn-a{background:var(--accent);color:#000;}.mbtn-a:hover{background:#ffb700;}
+.mbtn-s{background:var(--surface2);color:var(--text);border:1px solid var(--border);}.mbtn-s:hover{border-color:var(--text2);}
+.empty{text-align:center;padding:50px 20px;color:var(--text2);}
+/* ROUTE EDIT TAG */
+.rtag{display:inline-block;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;text-transform:uppercase;margin-top:2px;}
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--green);color:#000;padding:10px 20px;border-radius:8px;font-weight:700;font-size:14px;z-index:999;transition:transform .3s;pointer-events:none;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">IEMS <span>·</span> Rutas</div>
+  <div class="subtitle">Soluciones y Suministros IEMS — Funza, Cundinamarca</div>
+  <div class="hdate" id="hdate"></div>
+  <button onclick="loadRemoteData().then(()=>{renderDash();renderRoutes();})" 
+    style="background:rgba(240,165,0,.15);border:1px solid rgba(240,165,0,.3);color:var(--accent);padding:6px 12px;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">
+    🔄 Sincronizar
+  </button>
+
+</header>
+<nav>
+  <button class="nb active" onclick="showView('dashboard',this)">📊 Dashboard</button>
+  <button class="nb" onclick="showView('rutas',this)">🚚 Rutas</button>
+  <button class="nb" onclick="showView('calendario',this)">📅 Calendario</button>
+  <button class="nb" onclick="showView('resumen',this)">📋 Resumen</button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<main>
+<!-- DASHBOARD -->
+<div class="view active" id="view-dashboard">
+  <div class="stats-grid" id="statsGrid"></div>
+  <div class="dash-grid">
+    <div class="card"><h3>Progreso por Ruta — Hoy</h3><div id="routeProgress"></div></div>
+    <div class="card"><h3>Actividad Reciente</h3><div id="actList"></div></div>
+  </div>
+</div>
+
+<!-- RUTAS -->
+<div class="view" id="view-rutas">
+  <div class="rh">
+    <h2>Checklist de Rutas</h2>
+    <input class="srch" type="text" placeholder="🔍 Buscar empresa..." oninput="filterCos(this.value)" id="srch">
+  </div>
+  <div class="rtabs" id="rtabs"></div>
+  <div class="rbar" id="rbar"></div>
+  <div class="cgrid" id="cgrid"></div>
+</div>
+
+<!-- CALENDARIO -->
+<div class="view" id="view-calendario">
+  <div class="cal-layout">
+    <div>
+      <div class="cal-wrap">
+        <div class="cal-nav">
+          <button class="cal-arr" onclick="chMon(-1)">&#8249;</button>
+          <h3 id="calTitle"></h3>
+          <button class="cal-arr" onclick="chMon(1)">&#8250;</button>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+      </div>
+    </div>
+    <div class="cal-detail" id="calDetail">
+      <h3>Selecciona un día</h3>
+      <p style="color:var(--text2);font-size:13px">Toca un día para ver o programar entregas.</p>
+    </div>
+  </div>
+</div>
+
+<!-- RESUMEN -->
+<div class="view" id="view-resumen">
+  <div class="sum-ctrl">
+    <h2>Resumen de Entregas</h2>
+    <button class="per-btn active" onclick="setPeriod('week',this)">Esta Semana</button>
+    <button class="per-btn" onclick="setPeriod('month',this)">Este Mes</button>
+    <button class="exp-btn" onclick="exportCSV()">⬇ Exportar CSV</button>
+  </div>
+  <div class="sum-grid" id="sumGrid"></div>
+</div>
+</main>
+
+<!-- MODAL: REGISTRO CONDUCTOR -->
+<div class="overlay" id="drvOverlay">
+  <div class="modal" style="max-width:390px">
+    <h3>📦 Registrar Entrega</h3>
+    <div style="background:var(--surface2);padding:9px 12px;border-radius:7px;border-left:3px solid var(--accent);margin-bottom:16px;font-size:13px;">
+      <span id="drvTitle" style="color:var(--text);font-weight:600"></span>
+      <div id="drvAddr" style="color:var(--text2);font-size:11px;margin-top:3px"></div>
+    </div>
+    <div class="mrow">
+      <label>Nombre del Conductor *</label>
+      <input type="text" id="drvName" placeholder="Ej: Carlos Rodríguez" onkeydown="if(event.key==='Enter')confirmDrv()">
+    </div>
+    <div class="mrow">
+      <label>Observación (opcional)</label>
+      <input type="text" id="drvObs" placeholder="Ej: Entregado en portería, firmó recepción">
+    </div>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:14px">🕐 Se registrará la hora actual automáticamente</div>
+    <div class="mactions">
+      <button class="mbtn mbtn-s" onclick="closeDrv()">Cancelar</button>
+      <button class="mbtn mbtn-g" onclick="confirmDrv()">✓ Confirmar Entrega</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: CAMBIAR RUTA -->
+<div class="overlay" id="routeEditOverlay">
+  <div class="modal" style="max-width:380px">
+    <h3>🔄 Cambiar Ruta</h3>
+    <div style="background:var(--surface2);padding:9px 12px;border-radius:7px;margin-bottom:16px;font-size:13px;">
+      <span id="reTitle" style="color:var(--text);font-weight:600"></span>
+      <div id="reAddr" style="color:var(--text2);font-size:11px;margin-top:3px"></div>
+    </div>
+    <div class="mrow">
+      <label>Asignar a Ruta</label>
+      <select id="reRoute">
+        <option>Calle 13</option><option>Calle 80</option>
+        <option>Funza</option><option>Mosquera</option><option>Madrid</option>
+      </select>
+    </div>
+    <div class="mactions">
+      <button class="mbtn mbtn-s" onclick="closeRouteEdit()">Cancelar</button>
+      <button class="mbtn mbtn-a" onclick="saveRouteEdit()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: CALENDARIO ADD -->
+<div class="overlay" id="calOverlay">
+  <div class="modal" style="max-width:440px">
+    <h3>📦 Programar Entrega</h3>
+    <div class="mrow"><label>Fecha</label><input type="date" id="calDate"></div>
+    <div class="mrow">
+      <label>Ruta</label>
+      <select id="calRoute" onchange="loadCalCos()">
+        <option value="">— Selecciona ruta —</option>
+        <option>Calle 13</option><option>Calle 80</option>
+        <option>Funza</option><option>Mosquera</option><option>Madrid</option>
+      </select>
+    </div>
+    <div class="mrow"><label>Empresa</label><select id="calCo"><option>— Selecciona ruta primero —</option></select></div>
+    <div class="mrow"><label>Observación (opcional)</label><input type="text" id="calObs" placeholder="Ej: Entregar en bodega 3"></div>
+    <div class="mactions">
+      <button class="mbtn mbtn-s" onclick="closeCalModal()">Cancelar</button>
+      <button class="mbtn mbtn-a" onclick="saveCalDel()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===================== DATA =====================
+const COMPANIES_BASE = [{"id":1,"name":"LATIN PACK SAS","fullName":"LATIN PACK S.A.S","address":"AV. LONG DE OCCIDENTE KM 19 PARQUE INDUSTRIAL SAN JORGE BOD 87","city":"Mosquera","phone":"6018295529","route":"Mosquera"},{"id":2,"name":"ALMAGRARIO","fullName":"ALMAGRARIO S.A EN REORGANIZACIÓN","address":"CL 134 BIS 19 75","city":"Bogotá","phone":"3173649688","route":"Calle 80"},{"id":3,"name":"PLASTICOS DE LA SABANA","fullName":"ALDANA MERCEDES","address":"CL 10 A 13 02 BG 14 C","city":"Mosquera","phone":"3202193796","route":"Mosquera"},{"id":4,"name":"ALCOMEX","fullName":"ALMACENADORES Y COMERCIO EXTERIOR S.A.A","address":"CR 103 25B 86","city":"Bogotá","phone":"6017941090","route":"Calle 13"},{"id":5,"name":"ARM TRANSFORMADORES S.A.S","fullName":"ARM TRANSFORMADORES S.A.S","address":"AV TRONCAL DE OCC 18 76","city":"Mosquera","phone":"3203047866","route":"Mosquera"},{"id":6,"name":"CONDICOL CO S.A.S","fullName":"CONDICOL CO S.A.S","address":"CL 193 7 A 21","city":"Bogotá","phone":"3102291676","route":"Calle 80"},{"id":7,"name":"COLSOF S.A.S","fullName":"COLSOF S.A.S","address":"ZF METROPOLITANA COTA VDA VUELTA GRANDE PD SAN RAFAEL BG 55 56","city":"Cota","phone":"6012757070","route":"Calle 13"},{"id":8,"name":"C.R.P HERRAMIENTAS Y SOLUCIONES","fullName":"C.R.P HERRAMIENTAS Y SOLUCIONES S.A.S","address":"CL 1 C BIS 19 32","city":"Bogotá","phone":"3204166891","route":"Calle 80"},{"id":9,"name":"CHEMICAL LOGISTICS SAS","fullName":"CHEMICAL LOGISTICS SAS","address":"ZF INTEXZONA KM 1 VIA SIBERIA FUNZA ET 2 BG 95","city":"Cota","phone":"6018237510","route":"Calle 13"},{"id":10,"name":"COLOMBIA INDUCABLES SAS","fullName":"COLOMBIA INDUCABLES S.A.S","address":"CR 14 A 7 99 BG 6 MZ 8","city":"Mosquera","phone":"6018295524","route":"Mosquera"},{"id":11,"name":"TRANSPORTADORA ROTTERDAN","fullName":"COMPAÑIA TRANSPORTADORA ROTTERDAN S.A.S","address":"KM 5 2 VIA SIBERIA FUNZA VDA EL CACIQUE BG 4","city":"Funza","phone":"3167432142","route":"Funza"},{"id":12,"name":"COREV DE COLOMBIA S.A.S","fullName":"COREV DE COLOMBIA S.A.S","address":"CL 10 A 13 B BG 9 C","city":"Mosquera","phone":"3117461179","route":"Mosquera"},{"id":13,"name":"D-MAX FERRETERIA SAS","fullName":"D-MAX FERRETERIA S.A.S","address":"CL 21 1 38 LC2 3","city":"Funza","phone":"3176551926","route":"Funza"},{"id":14,"name":"DAYCA SUMINISTROS SAS","fullName":"DAYCA SUMINISTROS S.A.S","address":"CL 64 5 35 AP 402","city":"Bogotá","phone":"3015299076","route":"Calle 80"},{"id":15,"name":"DISTRIBUCIONES MADEG S.A.S","fullName":"DISTRIBUCIONES MADEG S.A.S","address":"CL 18A 1 24","city":"Funza","phone":"3187969898","route":"Funza"},{"id":16,"name":"DANKO MUEBLES Y DISEÑO","fullName":"DANKO MUEBLES Y DISEÑO S.A.S","address":"AC 57 R SUR 73 I 35 TO 3 AP 2624","city":"Bogotá","phone":"3183917871","route":"Calle 80"},{"id":17,"name":"DINAMIK ZONA FRANCA S.A.S","fullName":"DINAMIK ZONA FRANCA S.A.S","address":"KM 1 VIA SIBERIA-FUNZA","city":"Cota","phone":"3006938820","route":"Calle 13"},{"id":18,"name":"DOMINIO RAIZ S.A.S","fullName":"DOMINIO RAIZ S.A.S","address":"CALLE 10 A 13 B 02 BG 9 C","city":"Mosquera","phone":"3117461179","route":"Mosquera"},{"id":20,"name":"EVOCOM S.A","fullName":"EVOCOM S.A - EVOLUCIÓN EN COMPUTO S.A","address":"KM 3.4 VIA SIBERIA CENTRO EMPRESARIAL METROPOLITANO M1 BG 11","city":"Cota","phone":"6018966466","route":"Calle 13"},{"id":21,"name":"EFICIENCIA AMBIENTAL S.A.S","fullName":"EFICIENCIA AMBIENTAL S.A.S","address":"AVENIDA TRONCAL DE OCCIDENTE 18 76 PAR INDUSTRIAL SANTO DOMINGO MZ B BG 21","city":"Mosquera","phone":"6019441293","route":"Mosquera"},{"id":22,"name":"SIMET S.A.S","fullName":"EMPRESA DE SERVICIOS INDUMETALMECANICOS S.A.S","address":"CRA 3 16 58","city":"Mosquera","phone":"3167403964","route":"Mosquera"},{"id":24,"name":"FORMAPOR COLOMBIA S.A.S","fullName":"FORMAPOR COLOMBIA S.A.S","address":"CL 18A 1 80 SEC EL HATO","city":"Funza","phone":"3186952906","route":"Funza"},{"id":25,"name":"GESTIÓN FRANCA S.A.S","fullName":"GESTIÓN FRANCA S.A.S","address":"PD SAN RAFAEL VDA VUELTA GRANDE MCP DE COTA ZN FRANCA METROPOLITANA","city":"Cota","phone":"3102418577","route":"Calle 13"},{"id":26,"name":"GRUPO COLOMBIANO DE BEBIDAS","fullName":"GRUPO COLOMBIANO DE BEBIDAS S.A.S","address":"DIAGONAL 46 A SUR 51 D 23","city":"Bogotá","phone":"3052436003","route":"Calle 80"},{"id":27,"name":"GRUPO CRE ARIAS S EN C","fullName":"GRUPO CRE ARIAS S EN C","address":"T C OCC KM 19 VIA BOGOTA MOSQUERA MZ P 9 BG 104 PAR INDUSTRIAL SAN JORGE","city":"Mosquera","phone":"3107852501","route":"Mosquera"},{"id":28,"name":"GRUPO LYSCO S.A.S","fullName":"GRUPO LYSCO S.A.S","address":"AUT MEDELLIN KM 3 TER TERRESTE DE CARGA OIKOS MD 5 BG 8","city":"Cota","phone":"3174330665","route":"Calle 13"},{"id":29,"name":"SOMOS MAYOR CHINOS NP S.A.S","fullName":"SOMOS MAYOR CHINOS NP S.A.S","address":"CALLE 15 NO 10-50","city":"Funza","phone":"6018560617","route":"Funza"},{"id":30,"name":"AGROKO S.A.S","fullName":"AGROKO S.A.S","address":"CL 12 18 93 MZ P 3 BG 25","city":"Mosquera","phone":"3138116306","route":"Mosquera"},{"id":31,"name":"ANDES COL S.A.S","fullName":"ANDES COL S.A.S","address":"PARQUE INDUSTRIAL EL TREBOL BODEGA 3A","city":"Bogotá","phone":"3174014751","route":"Calle 13"},{"id":32,"name":"YAA SOLUCIONES ELECTRO INDUSTRIALES","fullName":"YAA SOLUCIONES ELECTRO INDUSTRIALES S.A.S","address":"CRA 9 6 A 34","city":"Funza","phone":"3222335682","route":"Funza"},{"id":33,"name":"HOGAR Y CREDITO","fullName":"HOGAR Y CREDITO","address":"KM 3.5 AUTOPISTA MEDELLIN VIA SIBERIA CEM BODEGA 30 MODULO 03","city":"Cota","phone":"3016017688","route":"Calle 13"},{"id":36,"name":"ANRIA S.A.S","fullName":"ANRIA S.A.S","address":"CR 106 15 A 25 MZ 15 IN 106 BG 4","city":"Bogotá","phone":"6013904484","route":"Calle 13"},{"id":37,"name":"LUBESA LTDA","fullName":"LUBESA LTDA","address":"CL 10 A 13B 02 BG 14 C","city":"Mosquera","phone":"3202193796","route":"Mosquera"},{"id":38,"name":"LDM INTERNACIONAL SAS","fullName":"LDM INTERNACIONAL SAS","address":"PAR INDUSTRIAL SANTO DOMINGO MZ I BG 2 B","city":"Mosquera","phone":"6018295511","route":"Mosquera"},{"id":39,"name":"INNOVACION PARA LABORATORIO","fullName":"INNOVACION PARA LABORATORIO S.A.S","address":"CRA 112 A 78 B BRR VILLAS DE GRANADA","city":"Bogotá","phone":"6017040058","route":"Calle 13"},{"id":40,"name":"INNOVAKIT SAS BIC","fullName":"INNOVAKIT SAS BIC","address":"PARQUE INDUSTRIAL SAN JORGE BOD 62","city":"Mosquera","phone":"601299796","route":"Mosquera"},{"id":41,"name":"IM MARKETING GROUP SAS","fullName":"IM MARKETING GROUP SAS","address":"CL 18 A 01 02 ESTE","city":"Mosquera","phone":"3213498783","route":"Mosquera"},{"id":43,"name":"IMPORTACIONES LED S.A.S","fullName":"IMPORTACIONES LED S.A.S","address":"AV TRONCAL OCCIDENTE 18 76 BG C 12 PAR INDUSTRIAL SANTO DOMINGO","city":"Mosquera","phone":"3174361515","route":"Mosquera"},{"id":44,"name":"INDUMUEBLES HERNANDEZ SAS","fullName":"INDUMUEBLES HERNANDEZ SAS","address":"AV TRONCAL PANAM DE OCC 5 61 E PAR INDUSTRIAL PUERTO VALLARTA BG 1","city":"Mosquera","phone":"6018933316","route":"Mosquera"},{"id":46,"name":"INJESA SAS","fullName":"INJESA SAS","address":"CL 18 A 1 60","city":"Funza","phone":"6018265845","route":"Funza"},{"id":47,"name":"INTEGRA CADENA DE SERVICIOS SAS","fullName":"INTEGRA CADENA DE SERVICIOS SAS","address":"CR 27 A 49 A 36","city":"Bogotá","phone":"6017006232","route":"Calle 80"},{"id":48,"name":"JD VALVULAS TUBERIAS Y ACCESORIOS","fullName":"JD VALVULAS TUBERIAS Y ACCESORIOS SAS","address":"AUT MEDELLIN KM 3 TER TERRESTE DE CARGA BG 67 MD 2","city":"Cota","phone":"6018237811","route":"Calle 13"},{"id":49,"name":"LOGISTICA Y TRANSPORTES VELA SAS","fullName":"LOGISTICA Y TRANSPORTES VELA SAS","address":"CL 23 G 104 A 20","city":"Bogotá","phone":"3183500402","route":"Calle 80"},{"id":50,"name":"LAAX SERVICE S A S","fullName":"LAAX SERVICE S A S","address":"CR 106 15 A 25 IN 72 BG 2 MZ 12","city":"Bogotá","phone":"6017432277","route":"Calle 13"},{"id":51,"name":"LINKCARGO PLUS S.A.S","fullName":"LINKCARGO PLUS S.A.S","address":"AUTOPISTA MEDELLIN KM 3.5 VIA SIBERIA","city":"Cota","phone":"3142976406","route":"Calle 13"},{"id":52,"name":"LOGIK TRADE SUPPORT ZF S.A.S","fullName":"LOGIK TRADE SUPPORT ZONA FRANCA S.A.S","address":"KM 1 VIA SIBERIA FUNZA ZF INTEXZONA BG 94 B","city":"Cota","phone":"6018966194","route":"Calle 13"},{"id":53,"name":"MTI MONTAJES Y MANTENIMIENTOS","fullName":"MTI MONTAJES Y MANTENIMIENTOS TECNICOS INDUSTRIALES S A S","address":"CCR 5 E 10 131 VIA PURINA","city":"Mosquera","phone":"6018277950","route":"Mosquera"},{"id":54,"name":"MAKANDN SAS","fullName":"MAKANDN SAS","address":"CALLE 2 18 93 PAR INDUSTRIAL SAN JORGE MZ T4 BG 85-86","city":"Mosquera","phone":"6018273203","route":"Mosquera"},{"id":55,"name":"MAGRU SAS","fullName":"MAGRU SAS","address":"CR 128 15 B 36","city":"Bogotá","phone":"6012670876","route":"Calle 13"},{"id":56,"name":"MUDANZAS Y LOGISTICAS INTEGRALES","fullName":"MUDANZAS Y LOGISTICAS INTEGRALES S.A.S","address":"CR 10 N 15 52","city":"Soacha","phone":"3115786572","route":"Calle 13"},{"id":57,"name":"MULTIMARCAS PINTUINK","fullName":"DIANA MARCELA - MULTIMARCAS","address":"CRA 3 17 26 BRR SERREZUELITA","city":"Mosquera","phone":"6018299036","route":"Mosquera"},{"id":58,"name":"OCADE SAS","fullName":"ORGANIZACION DE CONTROL AMBIENTAL Y DESARROLLO EMPRESARIAL-OCADE SAS","address":"CALLE 2 18 93 BG I 14 PAR INDUSTRIAL SAN JORGE","city":"Mosquera","phone":"6018933793","route":"Mosquera"},{"id":59,"name":"OILFIELD SERVICES & SUPPLIES","fullName":"OILFIELD SERVICES & SUPPLIES S.A.S","address":"AUT MEDELLIN KM 3 TER TERRESTRE DE CARGA DE BOGOTA MD 4 BG 46","city":"Cota","phone":"6018234047","route":"Calle 13"},{"id":60,"name":"ORGANIZACION CARDENAS S.A.S","fullName":"ORGANIZACION CARDENAS S.A.S","address":"CR 75 N 24D 57","city":"Bogotá","phone":"6017821577","route":"Calle 80"},{"id":61,"name":"OUR COSMETICS S.A.S","fullName":"OUR COSMETICS S.A.S","address":"PARQUE INDUSTRIAL SAN JORGE TO 3 BG 77","city":"Mosquera","phone":"3115325862","route":"Mosquera"},{"id":62,"name":"PCSHEK TECNOLOGIA Y SERVICIOS","fullName":"PCSHEK TECNOLOGIA Y SERVICIOS S.A.S.","address":"TER TERRESTRE DE CARGA MD 3 BG 24 VDA SIBERIA COTA AUT MEDELLIN","city":"Cota","phone":"6018415192","route":"Calle 13"},{"id":63,"name":"PHIS S.A.S","fullName":"PHIS S.A.S","address":"CR 2 E 20 51","city":"Mosquera","phone":"3103323541","route":"Mosquera"},{"id":64,"name":"PLASTICOS HERSON S.A.S","fullName":"PLASTICOS HERSON S.A.S","address":"KM 3 VIA FUNZA - SIBERIA PAR INDUSTRIAL GALICIA MZ B BG 4","city":"Funza","phone":"3134323078","route":"Funza"},{"id":65,"name":"PROVEXPRESS SAS","fullName":"PROVEXPRESS SAS","address":"AUT MEDELLIN KM 3.5 VIA SIBERIA COTA TER TERRESTRE DE CARGA OIKOS","city":"Cota","phone":"6015185099","route":"Calle 13"},{"id":66,"name":"QUIMERCO SAS","fullName":"QUIMERCO SAS","address":"ZN FRANCA INTEXZONA KM 1 VIA SIBERIA FUNZA ET 2 LT 95","city":"Cota","phone":"6018237510","route":"Calle 13"},{"id":67,"name":"REFRITERMICA S.A.S","fullName":"REFRITERMICA S.A.S","address":"CL 18 A 04 02 BRR SAMARKANDA","city":"Funza","phone":"6018257436","route":"Funza"},{"id":68,"name":"REMY Y STUTE COLOMBIA SAS","fullName":"REMY Y STUTE COLOMBIA SAS","address":"TER TERRESTRE CARGA MD 6 BG 24","city":"Cota","phone":"6018415044","route":"Calle 13"},{"id":69,"name":"SMARTSTAR SAS","fullName":"SMARTSTAR SAS","address":"CL 124 7C 44 OF 206","city":"Bogotá","phone":"6018931503","route":"Calle 80"},{"id":70,"name":"SOL VERDE PRODUCE COMPANY SAS","fullName":"SOL VERDE PRODUCE COMPANY SAS","address":"PAR AGROINDUSTRIAL DE OCCIDENTE PAO LC 1095","city":"Cota","phone":"3186552862","route":"Calle 13"},{"id":71,"name":"SOLUTRA DE COLOMBIA LTDA","fullName":"SOLUTRA DE COLOMBIA LTDA","address":"AV TRONCAL PANAMERICANA DE OCCIDENTE 5 61 E BODEGA 20","city":"Mosquera","phone":"6019441212","route":"Mosquera"},{"id":72,"name":"SUDESPENSA BARRAGAN S.A.","fullName":"SUDESPENSA BARRAGAN S.A.","address":"AK 80 2 51 BG 8 LC 2","city":"Bogotá","phone":"6014482515","route":"Calle 80"},{"id":73,"name":"SUPLAIR LABS SAS","fullName":"SUPLAIR LABS SAS","address":"KM 19 VIA BOGOTA-MADRID PAR INDUSTRIAL SAN JORGE LC 144 P 2","city":"Mosquera","phone":"3203436237","route":"Mosquera"},{"id":74,"name":"OUTSERVICES SUPPLY S.A.S","fullName":"OUTSERVICES SUPPLY S.A.S","address":"CR 5 09 30","city":"Mosquera","phone":"3046207481","route":"Mosquera"},{"id":75,"name":"TECNOAPLICACIONES SAS","fullName":"TECNOAPLICACIONES SAS","address":"KM 3.5 VIA FUNZA SIBERIA PAR INDUSTRIAL SAN JOSE MZ A BG 6 2","city":"Funza","phone":"6018216550","route":"Funza"},{"id":76,"name":"TEZLA ENGINEERING CO SAS","fullName":"TEZLA ENGINEERING CO SAS","address":"CR 111 A 23 A 38","city":"Bogotá","phone":"3186518853","route":"Calle 13"},{"id":77,"name":"TORNILLOS Y PARTES PLAZA SAS","fullName":"TORNILLOS Y PARTES PLAZA SAS","address":"CR 25 13 55","city":"Bogotá","phone":"6012379700","route":"Calle 80"},{"id":78,"name":"UNION ANDINA DE TRANSPORTES","fullName":"UNION ANDINA DE TRANSPORTES S.A.S.","address":"CR 85 11 B 18","city":"Bogotá","phone":"6017445000","route":"Calle 13"},{"id":79,"name":"VICMON TRADING REPRESENTACIONES","fullName":"VICMON TRADING REPRESENTACIONES SAS","address":"KM 3.5 AUT BOGOTA - MEDELLIN TER DE CARGA TERRESTE DE BOGOTA MD 6 BG 32","city":"Cota","phone":"6018966861","route":"Calle 13"},{"id":80,"name":"WH AUTOPARTES COLOMBIA SAS","fullName":"WH AUTOPARTES COLOMBIA SAS","address":"CL 107 A 11 A 69","city":"Bogotá","phone":"6017432131","route":"Calle 80"},{"id":81,"name":"ZALT S.A.S","fullName":"ZALT S.A.S","address":"CR 106 15 25 BG 47 48 MZ 10","city":"Bogotá","phone":"3188044914","route":"Calle 13"},{"id":82,"name":"ACHITEX MINERVA COLOMBIA SAS","fullName":"ACHITEX MINERVA COLOMBIA SAS","address":"CL 23 116 31 BG 35 PARQUE INDUSTRIAL PUERTO CENTRAL","city":"Bogotá","phone":"3132490532","route":"Calle 13"},{"id":83,"name":"CAQUIMBO JAVIER","fullName":"CAQUIMBO JAVIER","address":"CR 3 17 29","city":"Funza","phone":"3134374704","route":"Funza"},{"id":84,"name":"DISEÑO Y LOGISTICA EN ALMACENAMIENTO","fullName":"DISEÑO Y LOGISTICA EN ALMACENAMIENTO","address":"PARQ EL DORADO FUNZA BG 36","city":"Funza","phone":"6018810822","route":"Funza"},{"id":85,"name":"RUEDA GARZON S.A.S","fullName":"RUEDA GARZON S.A.S","address":"CALLE 17 25-20","city":"Bogotá","phone":"","route":"Calle 80"},{"id":87,"name":"SILLETI COLOMBIA S.A.S","fullName":"SILLETI COLOMBIA S.A.S","address":"PARQUE INDUSTRIAL CELTA BODEGA 55-2","city":"Funza","phone":"3168539001","route":"Funza"},{"id":88,"name":"GRUPO SANCHEZ COLOMBIA S.A.S","fullName":"GRUPO SANCHEZ COLOMBIA S.A.S","address":"KM 3 VIA SIBERIA PAR INDUSTRIAL GALICIA BODEGA 6 MZ B","city":"Funza","phone":"3144571682","route":"Funza"},{"id":89,"name":"REPREMUNDO INDUSTRIAL","fullName":"REPREMUNDO INDUSTRIAL DE SERVICIOS S.A.S","address":"KM 1 VIA SIBERIA BG 13 A B FUNZA","city":"Funza","phone":"6014252650","route":"Funza"},{"id":90,"name":"GRUPO DIDACTA S.A.S","fullName":"GRUPO DIDACTA S.A.S","address":"AV. TRONCAL DE OCCIDENTE N 20-85 MZ 7 BG 45A ZFO","city":"Mosquera","phone":"3204605286","route":"Mosquera"},{"id":91,"name":"REPREMUNDO S.A.S","fullName":"REPRESENTACIONES DEL MUNDO S.A.S REPREMUNDO","address":"AV CARRERA 97 24 C 80 BRR FONTIBON","city":"Bogotá","phone":"6014252600","route":"Calle 13"},{"id":94,"name":"TRANS MILENIUM S.A.S","fullName":"EMPRESA DE CARGA GENERAL TRANS MILENIUM S.A.S","address":"CENTRO EMPRESARIAL PERU BODEGA 6","city":"Funza","phone":"3195905284","route":"Funza"},{"id":95,"name":"CAV AUTOMATION S.A.S","fullName":"CAV AUTOMATION - ROBÓTICA E INTRALOGISTICA S.A.S","address":"INTEXZONA BODEGA 90 - 2","city":"Cota","phone":"3162422424","route":"Calle 13"},{"id":96,"name":"LOGISTICA REPREMUNDO S.A.S","fullName":"LOGISTICA REPREMUNDO S.A.S","address":"AV CRA 97 N 24C - 60 IN 1","city":"Bogotá","phone":"6014252600","route":"Calle 13"},{"id":97,"name":"TECSES S.A.S","fullName":"TECSES S.A.S","address":"AUT MEDELLIN KM 3 5 SUR TER TERRESTRE DE CARGA BG 1 MD 5","city":"Cota","phone":"3008903500","route":"Calle 13"},{"id":98,"name":"DISTRIBUIDORA L & A S.A.S","fullName":"DISTRIBUIDORA L & A S.A.S","address":"CALLE 38 A SUR 72 Q 50","city":"Bogotá","phone":"3143495746","route":"Calle 80"},{"id":99,"name":"PHAREX LOGINTER SAS","fullName":"PHAREX LOGINTER SAS","address":"KM 1 VIA SIBERIA FUNZA ZF PERMANENTE INTEXZONA BG 36","city":"Cota","phone":"3204365788","route":"Calle 13"},{"id":100,"name":"PHAREX S.A","fullName":"PHAREX S.A","address":"AV GUAYACANES 79 A 25 BG 8-9","city":"Bogotá","phone":"3006032800","route":"Calle 80"},{"id":101,"name":"IMPORTACIONES FADIR S.A.S","fullName":"IMPORTACIONES FADIR S.A.S","address":"KM 2 VIA MADRID P PIEDRA PAR IND SAN GREGORIO","city":"Madrid","phone":"3212065789","route":"Madrid"},{"id":102,"name":"EGLASS S.A.S","fullName":"EGLASS S.A.S","address":"CL 14 3 49 CON MONTE LUPO OF 106","city":"Cota","phone":"3173675013","route":"Calle 13"},{"id":103,"name":"SURTIEMPRESS SIGLO XXI S.A.S","fullName":"SURTIEMPRESS SIGLO XXI S.A.S","address":"CALLE 18 10A 21 VILLA ADRIANA","city":"Funza","phone":"3142347885","route":"Funza"},{"id":104,"name":"RITTAL S.A.S","fullName":"RITTAL S.A.S","address":"AUT.BOG.MED KM 7 PARQUE EMPRE.CELTA BG1 LT 48","city":"Funza","phone":"3164717761","route":"Funza"},{"id":105,"name":"CAANROLA S.A.S","fullName":"CAANROLA S.A.S","address":"CALLE 17 02-35 EL HATO","city":"Funza","phone":"3208616357","route":"Funza"},{"id":106,"name":"COLOMBIANA DE MANGUERAS PETROLERAS","fullName":"COLOMBIANA DE MANGUERAS PETROLERAS E INDUSTRIALES S.A.S","address":"CR 2 16 45 BRR EL HATO","city":"Funza","phone":"3182618105","route":"Funza"},{"id":107,"name":"FRONTIER SUPPLY S.A.S","fullName":"FRONTIER SUPPLY S.A.S","address":"PARQUE INDUSTRIAL SANTA LUCIA LC 8","city":"Funza","phone":"3186618359","route":"Funza"},{"id":108,"name":"MARROQUINERA RIVIERA SAS","fullName":"MARROQUINERA RIVIERA SAS","address":"CALLE 41 13A - 22 BRR TEUSAQUILLO","city":"Bogotá","phone":"6012450003","route":"Calle 80"},{"id":109,"name":"MATECSA S.A.S","fullName":"MANUFACTURAS S.A.S. MATECSA","address":"PARQ INDUS SAN NICOLAS BG 8 Y 9","city":"Mosquera","phone":"3226811126","route":"Mosquera"},{"id":110,"name":"ZIPPAK COLOMBIA SAS","fullName":"Zippak Colombia Sas","address":"PAR INDUSTRIAL SAN DIEGO BG 13 KM 1.5 VIA FUNZA - SIBERIA","city":"Funza","phone":"6017560304","route":"Funza"},{"id":111,"name":"EMEGAL S.A.S","fullName":"EMEGAL S.A.S","address":"CL 18A 1 60","city":"Funza","phone":"3187120042","route":"Funza"},{"id":112,"name":"MULTICHINOS","fullName":"DEICY ROA - MULTICHINOS","address":"CRA 24 1 62","city":"Bogotá","phone":"3106493290","route":"Calle 80"},{"id":113,"name":"PROTEX S A S","fullName":"PROTEX S A S","address":"PARQ IND SAN JOSE KM4 VIA FUNZA SIBERIA","city":"Funza","phone":"3144719593","route":"Funza"},{"id":114,"name":"BIOCIDAS Y QUIMICOS S.A.S","fullName":"BIOCIDAS Y QUIMICOS S.A.S","address":"TER TERRESTRE DE CARGA BG 34 MD 4","city":"Cota","phone":"3174231682","route":"Calle 13"},{"id":115,"name":"INVERPLAST PR SAS","fullName":"INVERPLAST PR SAS","address":"PARQUE INDUSTRIAL FUNZA","city":"Funza","phone":"3147775454","route":"Funza"},{"id":116,"name":"REEMPACAR COMPANY LIMITADA","fullName":"REEMPACAR COMPANY LIMITADA","address":"PARQ INDUSTRIAL NEXO BGE3","city":"Madrid","phone":"3134308745","route":"Madrid"},{"id":117,"name":"TUPPERWARE COLOMBIA S.A.S.","fullName":"TUPPERWARE COLOMBIA S.A.S.","address":"PAR IND SAN DIEGO BG1C","city":"Funza","phone":"3212382335","route":"Funza"},{"id":118,"name":"MASSY ENERGY COLOMBIA S.A.S","fullName":"MASSY ENERGY COLOMBIA S.A.S","address":"CR 45A 93-64","city":"Bogotá","phone":"3183910168","route":"Calle 80"},{"id":119,"name":"NUEVA ERA SOLUCIONES SAS","fullName":"NUEVA ERA SOLUCIONES SAS","address":"CENTRO EMPRESARIAL METROPOLITANO BG44 MD2","city":"Cota","phone":"3202100862","route":"Calle 13"},{"id":120,"name":"COMERCIALIZADORA GUPO S.A.S.","fullName":"COMERCIALIZADORA GUPO S.A.S.","address":"CL 13 A 4 37","city":"Funza","phone":"3214672245","route":"Funza"},{"id":121,"name":"MAXICASSA S.A.S","fullName":"MAXICASSA S.A.S","address":"CRA 69 A 37B 65 SUR BRR CARVAJAL","city":"Bogotá","phone":"3214581117","route":"Calle 80"},{"id":122,"name":"AINTERCARGA SAS","fullName":"AINTERCARGA SAS","address":"AV CALLE 26 85D-55 MD 6 OF 227","city":"Bogotá","phone":"7965440","route":"Calle 13"},{"id":124,"name":"VENTAS INDUSTRIALES DE COLOMBIA","fullName":"VENTAS INDUSTRIALES DE COLOMBIA SAS","address":"TER TERRESTRE DE CARGA BG 78 MD 2","city":"Cota","phone":"3212751163","route":"Calle 13"},{"id":125,"name":"ACRIFORMAS PUBLICIDAD SAS","fullName":"ACRIFORMAS PUBLICIDAD SAS","address":"CR 12 11 88","city":"Funza","phone":"6018760686","route":"Funza"},{"id":126,"name":"LOGISTICA CARIBE SAS","fullName":"LOGISTICA CARIBE SAS","address":"CL 8 8-23","city":"Cota","phone":"3133291125","route":"Calle 13"},{"id":127,"name":"DISTRIBUIDORA DE CORREAS Y MANGUERAS","fullName":"DISTRIBUIDORA DE CORREAS Y MANGUERAS COLOMBIA SAS","address":"AV CENTENARIO DIAG 16 96H-49","city":"Bogotá","phone":"3168783353","route":"Calle 13"},{"id":128,"name":"ENVIOS LOGISTICOS CARGO SAS","fullName":"ENVIOS LOGISTICOS CARGO SAS","address":"CR 127 22D 93 BG 25","city":"Bogotá","phone":"3213431632","route":"Calle 13"},{"id":129,"name":"VERCOURRIER S.A.S.","fullName":"VERCOURRIER S.A.S.","address":"PAR INDS SAN JORGE MZ P10 BD 117","city":"Mosquera","phone":"3219590107","route":"Mosquera"},{"id":130,"name":"361° LOGÍSTICA P.O.P. COLOMBIA","fullName":"361º LOGÍSTICA P.O.P. COLOMBIA S.A.S.","address":"PAR IND LOS ROBLES 4 BG 6","city":"Cota","phone":"3143342378","route":"Calle 13"},{"id":131,"name":"AMERICAN LOGISTICS DE COLOMBIA","fullName":"AMERICAN LOGISTICS DE COLOMBIA SAS","address":"Carrera 69 F 17-45 Bodega 1","city":"Bogotá","phone":"3188017466","route":"Calle 80"},{"id":132,"name":"SURTIELECTRICOS Y SERVICIOS PLC SAS","fullName":"SURTIELECTRICOS Y SERVICIOS PLC SAS","address":"CL 3 17 03 LC 103","city":"Mosquera","phone":"3164604227","route":"Mosquera"},{"id":133,"name":"CASTEM COLOMBIA S A S","fullName":"CASTEM COLOMBIA S A S","address":"ZONA FRANCA INTEXZONA LOTE 92","city":"Cota","phone":"3163134552","route":"Calle 13"},{"id":134,"name":"ANDES SERVICIOS COMERCIALES ZF SAS","fullName":"ANDES SERVICIOS COMERCIALES ZONA FRANCA SAS","address":"CR 106 15A 25 BG 1 IN 39","city":"Bogotá","phone":"6017422368","route":"Calle 13"},{"id":135,"name":"NEW WAY SUPPLY STORAGE SAS","fullName":"NEW WAY SUPPLY STORAGE SAS","address":"CR 106 15A 25 ZONA FRANCA BOGOTA MZ 9 BG11","city":"Bogotá","phone":"3203039598","route":"Calle 13"},{"id":136,"name":"ROSETA INDUSTRIAL LTDA","fullName":"ROSETA INDUSTRIAL LTDA","address":"CR 4 17A - 70 BARRIO LA FORTUNA","city":"Funza","phone":"3133506348","route":"Funza"},{"id":137,"name":"FULLAGRO SAS","fullName":"FULLAGRO SAS","address":"MZ B LT 4 BG 4 C PAR INDUSTRIAL SAN JOSE","city":"Funza","phone":"3124697554","route":"Funza"},{"id":138,"name":"MANUCHAR COLOMBIA CIA SAS","fullName":"MANUCHAR COLOMBIA CIA SAS","address":"VIA SIBERIA-FUNZA KM 3 PAR INDUSTRIAL SANTA LUCIA BG 9 BG 10A","city":"Funza","phone":"3214497177","route":"Funza"},{"id":139,"name":"DISTRIBUIDORA SURTIEMPRESS XXI SAS","fullName":"DISTRIBUIDORA SURTIEMPRESS SIGLO XXI SAS","address":"CLL 18 10A 21","city":"Funza","phone":"3143319539","route":"Funza"},{"id":140,"name":"PORTES DE COLOMBIA SAS","fullName":"PORTES DE COLOMBIA SAS","address":"CL 16 F 97 66","city":"Bogotá","phone":"3138700704","route":"Calle 80"},{"id":141,"name":"COLTANQUES SAS","fullName":"COLTANQUES SAS","address":"CRA 88 17 B 40","city":"Bogotá","phone":"4222333","route":"Calle 80"},{"id":142,"name":"MANUFACTURING AND GLOBAL TRADING","fullName":"MANUFACTURING AND GLOBAL TRADING SAS","address":"CR 106 15A 25 MZ BG2","city":"Bogotá","phone":"3138302697","route":"Calle 13"},{"id":143,"name":"CONMISUR SAS","fullName":"COMERCIALIZADORA GENERAL E INDUSTRIAL DEL SUR SAS","address":"CL 166 17-42","city":"Bogotá","phone":"3104875394","route":"Calle 80"},{"id":144,"name":"LABORATORIOS AUROFARMA SAS","fullName":"LABORATORIOS AUROFARMA SAS","address":"AV TRONCAL PANAMERICANA DE OCCIDENTE 05-61 PAR PUERTO VALLARTA","city":"Mosquera","phone":"3203497579","route":"Mosquera"},{"id":145,"name":"FULPPI S.A.S","fullName":"FULPPI S.A.S","address":"CRA 23 120-48 Apto 203","city":"Bogotá","phone":"3124561802","route":"Calle 80"},{"id":146,"name":"VIOLOGIKÀ-PHARMA SAS","fullName":"VIOLOGIKÀ-PHARMA SAS","address":"CL 23 116 31 BRR LA ALDEA FONTIBON PAR INDUSTRIAL PUERTO CENTRAL BG 11","city":"Bogotá","phone":"3142362929","route":"Calle 13"},{"id":147,"name":"CEDICOLOMBIAN SAS","fullName":"CENTRO DE DISTRIBUCION LOGISTICO INTERNACIONAL SAS","address":"AV EL DORADO 103 09 BG 05","city":"Bogotá","phone":"3115796070","route":"Calle 13"},{"id":149,"name":"BIOMEDICAL DISTRIBUCION COLOMBIA","fullName":"BIOMEDICAL DISTRIBUCION COLOMBIA S.L. LTDA","address":"KM 1.5 VIA SIBERIA-TENJO BODEGA 6 7 8 9 10 TERMINALES LOGISTICOS","city":"Cota","phone":"3184991466","route":"Calle 13"},{"id":151,"name":"PINTUINK SAS","fullName":"PINTUINK SAS","address":"CR 13A 8 114 BG 9 MZ C","city":"Mosquera","phone":"3102657786","route":"Mosquera"},{"id":152,"name":"LABORATORIOS PROVET S. A. S.","fullName":"LABORATORIOS PROVET S. A. S.","address":"AUT MEDELLIN KM 7 PAR CELTA TRADE PARK PL77","city":"Funza","phone":"3208385679","route":"Funza"},{"id":153,"name":"BETTERWARE COLOMBIA SAS","fullName":"BETTERWARE COLOMBIA SAS","address":"CR 59 152 25 ED SPACES COLINA P 4 OF 421 5","city":"Bogotá","phone":"3016275034","route":"Calle 80"},{"id":154,"name":"AVIOMAR S.A.S","fullName":"AVIOMAR S.A.S EXPRESOS AEREOS Y MARITIMOS","address":"CRA 10 96-25 OF 404","city":"Bogotá","phone":"6015551757","route":"Calle 80"},{"id":155,"name":"PRODUCTOS ALIMENTICIOS CALIXPES","fullName":"PRODUCTOS ALIMENTICIOS CALIXPES S A S","address":"AV TRONCAL DE OCCIDENTE 18-76 PAR INDUSTRIAL SANTO DOMINGO BG 15","city":"Mosquera","phone":"3167472640","route":"Mosquera"},{"id":156,"name":"LINE SERVICE ZONA FRANCA S.A.S","fullName":"LINE SERVICE ZONA FRANCA S.A.S","address":"VIA SIBERIA FUNZA KM 05 INTEXMODA LT8","city":"Cota","phone":"3212635089","route":"Calle 13"},{"id":157,"name":"FERRETODO SAS","fullName":"BR INVERSIONES FERRETODO SAS","address":"CRA 4 2 42","city":"Mosquera","phone":"3103200436","route":"Mosquera"},{"id":158,"name":"LHAURA VET ZF S.A.S.","fullName":"LHAURA VET ZF S.A.S.","address":"AV TRONCAL DE OCCIDENTE 20 85 BG 53 ZF DE OCCIDENTE","city":"Mosquera","phone":"3212047411","route":"Mosquera"},{"id":159,"name":"STAR LAND SAS","fullName":"STAR LAND SAS","address":"CL 2 18-93 OF 144 PAR INDUSTRIAL SAN JORGE","city":"Mosquera","phone":"3214135502","route":"Mosquera"},{"id":160,"name":"D´ORIGENN S.A.S.","fullName":"D´ORIGENN S.A.S.","address":"PAR AGROINDUSTRIAL SAN JORGE MZ P5 BG 51 CR OCC KM 119","city":"Mosquera","phone":"3102035764","route":"Mosquera"},{"id":161,"name":"XCB DE COLOMBIA LIMITED","fullName":"XCB DE COLOMBIA LIMITED SUCURSAL COLOMBIANA","address":"KM 7 VIA H L T 155 BG 10 PAR INDUSTRIAL CELTA TRADE PARK","city":"Funza","phone":"3115424778","route":"Funza"},{"id":162,"name":"MARCEGAGLIA COLOMBIA S.A.S.","fullName":"MARCEGAGLIA COLOMBIA S.A.S.","address":"KM 1.5 VIA FUNZA SIBERIA PAR INDUSTRIAL SAN DIEGO BG 1 H","city":"Funza","phone":"3104432385","route":"Funza"}];
+
+
+// ============================================================
+// CONFIGURACION - Pega aqui tu URL de Google Apps Script
+// ============================================================
+const API_URL = 'https://script.google.com/macros/s/AKfycbwBIY4o6z9h5VtpJ-FkuV9BGmdjJyMS0sE-nKgt-KDl9uou24AgvUt0Nbxue6a4KLL0MA/exec';
+
+// Si no hay API configurada, mostrar setup
+function checkSetup() {
+  if (!API_URL) {
+    document.body.innerHTML = `
+      <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0d1117;font-family:'Barlow',sans-serif;padding:20px">
+        <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;padding:32px;max-width:480px;width:100%">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:800;color:#f0a500;margin-bottom:8px">IEMS · Configuración</div>
+          <p style="color:#8b949e;font-size:14px;margin-bottom:24px">Pega la URL de tu Google Apps Script para sincronizar los datos entre dispositivos.</p>
+          <label style="display:block;font-size:11px;color:#8b949e;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">URL del Apps Script</label>
+          <input id="setupUrl" type="text" placeholder="https://script.google.com/macros/s/.../exec"
+            style="width:100%;background:#1e2530;border:1px solid #30363d;border-radius:8px;padding:11px;color:#e6edf3;font-size:14px;margin-bottom:16px">
+          <button onclick="saveSetup()" style="width:100%;background:#f0a500;color:#000;border:none;border-radius:8px;padding:13px;font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:800;cursor:pointer">
+            Conectar y Abrir App
+          </button>
+          <div style="margin-top:16px;padding:12px;background:#0d1117;border-radius:8px;border-left:3px solid #f0a500">
+            <div style="font-size:11px;color:#8b949e;line-height:1.7">
+              <b style="color:#e6edf3">¿Cómo obtener la URL?</b><br>
+              1. Ve a <b>script.google.com</b><br>
+              2. Crea un nuevo proyecto y pega el código<br>
+              3. Clic en <b>Implementar → Nueva implementación</b><br>
+              4. Tipo: <b>Aplicación web</b> · Acceso: <b>Cualquier usuario</b><br>
+              5. Copia la URL y pégala aquí
+            </div>
+          </div>
+        </div>
+      </div>`;
+    return false;
+  }
+  return true;
+}
+
+function saveSetup() {
+  const url = document.getElementById('setupUrl').value.trim();
+  if (!url.includes('script.google.com')) {
+    alert('La URL no parece válida. Debe ser de script.google.com');
+    return;
+  }
+  localStorage.setItem('iems_api_url', url);
+  location.reload();
+}
+
+// ============================================================
+// API - Comunicación con Google Apps Script
+// ============================================================
+async function apiCall(action, body = {}) {
+  try {
+    // Append action to path: /exec/ACTION (pathInfo approach)
+    const url = API_URL + '/' + action;
+    const payload = JSON.stringify({ action, ...body });
+    
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: payload,
+      redirect: 'follow'
+    });
+    
+    const text = await res.text();
+    if (text.trim().startsWith('<')) return null;
+    
+    const data = JSON.parse(text);
+    if (!data.ok) throw new Error(data.error);
+    return data.data;
+  } catch (err) {
+    console.error('API error:', err);
+    return null;
+  }
+}
+
+async function loadRemoteData() {
+  showToast('🔄 Sincronizando...');
+  const [entregasRes, rutasRes] = await Promise.all([
+    apiCall('getEntregas'),
+    apiCall('getRutas')
+  ]);
+  
+  if (entregasRes) {
+    S.deliveries = entregasRes.entregas || {};
+    // Merge with local data - remote wins
+    try { localStorage.setItem('iems3', JSON.stringify({d:S.deliveries,t:S.todayDone,ld:S.lastDriver})); } catch(e) {}
+  }
+  if (rutasRes) {
+    routeOverrides = rutasRes.overrides || {};
+    try { localStorage.setItem('iems_routes', JSON.stringify(routeOverrides)); } catch(e) {}
+  }
+  // Refresh whichever view is active
+  const activeView = document.querySelector('.view.active');
+  if (activeView) {
+    if (activeView.id === 'view-dashboard') renderDash();
+    if (activeView.id === 'view-rutas') { renderRoutes(); renderCos(); }
+    if (activeView.id === 'view-calendario') renderCal();
+    if (activeView.id === 'view-resumen') renderSum();
+  }
+  showToast('✓ Datos sincronizados');
+}
+
+async function syncSaveEntrega(companyId, route, done, driver, hora, note, fecha, co) {
+  return await apiCall('saveEntrega', {
+    fecha, companyId, route, done, driver, hora, note,
+    ts: Date.now(),
+    empresa: co ? co.name : '',
+    direccion: co ? co.address : '',
+    ciudad: co ? co.city : ''
+  });
+}
+
+async function syncUndoEntrega(companyId, fecha) {
+  return await apiCall('undoEntrega', { companyId, fecha });
+}
+
+async function syncSaveRuta(companyId, route) {
+  return await apiCall('saveRuta', { companyId, route });
+}
+
+// Sincronizar cada 30 segundos automáticamente
+setInterval(async () => {
+  const entregasRes = await apiCall('getEntregas');
+  if (entregasRes && entregasRes.entregas) {
+    S.deliveries = entregasRes.entregas;
+    const activeView = document.querySelector('.view.active');
+    if (activeView) {
+      if (activeView.id === 'view-dashboard') renderDash();
+      if (activeView.id === 'view-rutas') renderCos(document.getElementById('srch')?.value || '');
+      if (activeView.id === 'view-calendario') renderCal();
+      if (activeView.id === 'view-resumen') renderSum();
+    }
+  }
+}, 30000);
+
+
+const ROUTES = ['Calle 13','Calle 80','Funza','Mosquera','Madrid'];
+const RC = {'Calle 13':'#f0a500','Calle 80':'#3fb950','Funza':'#58a6ff','Mosquera':'#e05c00','Madrid':'#b48eff'};
+
+// Load route overrides from session
+let routeOverrides = {};
+try { routeOverrides = JSON.parse(sessionStorage.getItem('iems_routes')||'{}'); } catch(e){}
+
+function getCompanies() {
+  return COMPANIES_BASE.map(c => ({...c, route: routeOverrides[c.id] || c.route}));
+}
+
+function mapsUrl(c) {
+  const q = encodeURIComponent(c.address + ', ' + c.city + ', Colombia');
+  return 'https://www.google.com/maps/search/?api=1&query=' + q;
+}
+
+let S = {
+  deliveries:{}, todayDone:{}, curRoute:'Calle 13',
+  calMon:new Date().getMonth(), calYr:new Date().getFullYear(),
+  selDate:null, period:'week', lastDriver:''
+};
+try{const s=sessionStorage.getItem('iems3');if(s){const p=JSON.parse(s);Object.assign(S,{deliveries:p.d||{},todayDone:p.t||{},lastDriver:p.ld||''}); }}catch(e){}
+
+function save(){
+  try{sessionStorage.setItem('iems3',JSON.stringify({d:S.deliveries,t:S.todayDone,ld:S.lastDriver}));}catch(e){}
+  try{sessionStorage.setItem('iems_routes',JSON.stringify(routeOverrides));}catch(e){}
+}
+
+function today(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function fmtD(s){if(!s)return'';const[y,m,d]=s.split('-');const ms=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];return parseInt(d)+' '+ms[parseInt(m)-1]+' '+y;}
+function byCo(r){return getCompanies().filter(c=>c.route===r);}
+
+function showToast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+// VIEWS
+function showView(n,btn){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
+  document.getElementById('view-'+n).classList.add('active');btn.classList.add('active');
+  if(n==='dashboard')renderDash();
+  if(n==='rutas')renderRoutes();
+  if(n==='calendario')renderCal();
+  if(n==='resumen')renderSum();
+}
+
+// HEADER
+(function(){
+  const d=new Date();
+  const ds=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const ms=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  document.getElementById('hdate').textContent=ds[d.getDay()]+', '+d.getDate()+' de '+ms[d.getMonth()]+' '+d.getFullYear();
+})();
+
+// DASHBOARD
+function renderDash(){
+  const t=today(); const cos=getCompanies();
+  const tds=S.deliveries[t]||[];
+  const tdone=tds.filter(d=>d.done).length;
+  const stats=[
+    {l:'Empresas Registradas',v:cos.length,s:'en 5 rutas activas',c:'var(--accent)'},
+    {l:'Entregas Hoy',v:tds.length,s:tdone+' completadas',c:'var(--green)'},
+    {l:'Pendientes Hoy',v:tds.length-tdone,s:'por completar',c:'var(--red)'},
+    {l:'Rutas Activas',v:5,s:'Calle 13 · 80 · Funza · Mosquera · Madrid',c:'var(--blue)'}
+  ];
+  document.getElementById('statsGrid').innerHTML=stats.map(s=>`<div class="stat-card" style="border-top-color:${s.c}"><div class="lbl">${s.l}</div><div class="val" style="color:${s.c}">${s.v}</div><div class="sub">${s.s}</div></div>`).join('');
+  document.getElementById('routeProgress').innerHTML=ROUTES.map(r=>{
+    const rdels=tds.filter(d=>d.route===r);const done=rdels.filter(d=>d.done).length;
+    const pct=rdels.length?Math.round(done/rdels.length*100):0;const col=RC[r];
+    return `<div class="prog-row"><div class="prog-name" style="color:${col}">${r}</div><div class="prog-bar"><div class="prog-fill" style="width:${pct}%;background:${col}"></div></div><div class="prog-ct">${done}/${rdels.length} <span style="font-size:10px">(${byCo(r).length})</span></div></div>`;
+  }).join('');
+  const acts=Object.entries(S.deliveries).flatMap(([dt,ds])=>ds.filter(d=>d.done).map(d=>({...d,date:dt}))).sort((a,b)=>b.ts-a.ts).slice(0,8);
+  document.getElementById('actList').innerHTML=acts.length===0
+    ?'<div class="empty"><p>Sin actividad aún.</p></div>'
+    :acts.map(d=>{const co=getCompanies().find(c=>c.id===d.companyId);return`<div class="act-item"><div class="act-dot" style="background:${RC[d.route]||'#8b949e'}"></div><div style="flex:1"><div style="font-weight:600">${co?co.name:'?'}</div><div style="color:var(--text2);font-size:11px">${fmtD(d.date)} · ${d.route}${d.driver?' · 👤 '+d.driver:''}${d.hora?' · '+d.hora:''}</div></div><div style="width:7px;height:7px;border-radius:50%;background:var(--green)"></div></div>`;}).join('');
+}
+
+// RUTAS
+function renderRoutes(){
+  const t=today(); const tds=S.deliveries[t]||[];
+  document.getElementById('rtabs').innerHTML=ROUTES.map(r=>{
+    const cnt=byCo(r).length;const done=tds.filter(d=>d.route===r&&d.done).length;const sched=tds.filter(d=>d.route===r).length;
+    const isAct=S.curRoute===r;const col=RC[r];
+    return `<button class="rtab" style="${isAct?'background:'+col+';border-color:'+col+';color:#000':''}" onclick="selRoute('${r}')">
+      ${r} <span class="bdg">${done}/${sched} <span style="opacity:.7">/ ${cnt}</span></span>
+    </button>`;
+  }).join('');
+  const cos=byCo(S.curRoute);const col=RC[S.curRoute];
+  const sched=tds.filter(d=>d.route===S.curRoute);const done=sched.filter(d=>d.done).length;
+  const pct=sched.length?Math.round(done/sched.length*100):0;
+  document.getElementById('rbar').innerHTML=`
+    <span style="font-weight:700;color:${col}">${S.curRoute}</span>
+    <div class="rbar-prog"><div class="rbar-fill" style="width:${pct}%;background:${col}"></div></div>
+    <span style="color:var(--text2)">${done} entregadas de ${sched.length} programadas · <b style="color:var(--text)">${cos.length}</b> empresas en ruta</span>
+  `;
+  renderCos();
+}
+
+function selRoute(r){S.curRoute=r;renderRoutes();}
+
+function renderCos(filter=''){
+  const t=today(); const tds=S.deliveries[t]||[];const col=RC[S.curRoute];
+  let cos=byCo(S.curRoute);
+  if(filter)cos=cos.filter(c=>c.name.toLowerCase().includes(filter.toLowerCase())||c.fullName.toLowerCase().includes(filter.toLowerCase())||c.address.toLowerCase().includes(filter.toLowerCase()));
+  cos=cos.sort((a,b)=>{const ad=tds.find(d=>d.companyId===a.id)?.done||false;const bd=tds.find(d=>d.companyId===b.id)?.done||false;return ad-bd;});
+  if(!cos.length){document.getElementById('cgrid').innerHTML='<div class="empty" style="grid-column:1/-1"><p>Sin resultados</p></div>';return;}
+  document.getElementById('cgrid').innerHTML=cos.map(c=>{
+    const del=tds.find(d=>d.companyId===c.id);const done=del&&del.done;
+    const mapLink=mapsUrl(c);
+    return `<div class="ccard ${done?'done':''}">
+      <div class="cbar" style="background:${done?'var(--green)':col}"></div>
+      <div class="chk-wrap">
+        <div class="chk ${done?'done':''}" onclick="openDrv(${c.id})" title="${done?'Entregado — click para deshacer':'Marcar entrega'}">
+          ${done?'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg>':''}
+        </div>
+        <div style="flex:1;min-width:0">
+          <div class="co-name" style="${done?'color:var(--green)':''}">${c.name}</div>
+          ${c.fullName!==c.name?`<div class="co-full">${c.fullName}</div>`:''}
+          <div class="co-addr">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:1px"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            ${c.address}, ${c.city}
+          </div>
+          ${c.phone&&c.phone!='0000000000'&&c.phone?`<div class="co-phone"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013 7.18 2 2 0 015 5h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L9.91 12a16 16 0 006.29 6.29l.38-.38a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 20.18z"/></svg>${c.phone}</div>`:''}
+
+          <div class="action-row">
+            <a href="${mapLink}" target="_blank" class="maps-btn">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Maps
+            </a>
+            ${done?'':`<button class="reg-btn" onclick="openDrv(${c.id})">✓ REGISTRAR ENTREGA</button>`}
+            <button class="edit-route-btn" onclick="openRouteEdit(${c.id})" title="Cambiar ruta">⇄</button>
+          </div>
+
+          ${done?`<div class="done-badge">
+            <div class="dtit">✓ ENTREGADO</div>
+            <div class="dinfo">👤 <b style="color:var(--text)">${del.driver||'—'}</b> &nbsp; 🕐 ${del.hora||''}</div>
+            ${del.note?`<div style="font-size:11px;color:var(--text2);margin-top:2px">📝 ${del.note}</div>`:''}
+            <button class="undo-btn" onclick="undoDel(${c.id},event)">↩ Deshacer</button>
+          </div>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterCos(v){renderCos(v);}
+
+// DRIVER MODAL
+let pendId=null;
+function openDrv(id){
+  const t=today(); const del=(S.deliveries[t]||[]).find(d=>d.companyId===id);
+  if(del&&del.done)return;
+  pendId=id; const co=getCompanies().find(c=>c.id===id);
+  document.getElementById('drvTitle').textContent=co?co.name:'';
+  document.getElementById('drvAddr').textContent=co?co.address+', '+co.city:'';
+  document.getElementById('drvName').value=S.lastDriver||'';
+  document.getElementById('drvName').style.borderColor='';
+  document.getElementById('drvObs').value='';
+  document.getElementById('drvOverlay').classList.add('open');
+  setTimeout(()=>document.getElementById('drvName').focus(),80);
+}
+function closeDrv(){document.getElementById('drvOverlay').classList.remove('open');pendId=null;}
+function confirmDrv(){
+  const drv=document.getElementById('drvName').value.trim();
+  if(!drv){document.getElementById('drvName').style.borderColor='var(--red)';document.getElementById('drvName').focus();return;}
+  const obs=document.getElementById('drvObs').value.trim();
+  const co=getCompanies().find(c=>c.id===pendId);
+  const t=today(); const now=new Date();
+  const hora=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  S.lastDriver=drv;
+  if(!S.deliveries[t])S.deliveries[t]=[];
+  const ex=S.deliveries[t].find(d=>d.companyId===pendId);
+  if(!ex)S.deliveries[t].push({companyId:pendId,route:co.route,done:true,driver:drv,hora,note:obs,ts:Date.now()});
+  else Object.assign(ex,{done:true,driver:drv,hora,note:obs,ts:Date.now()});
+  S.todayDone[pendId]=true; save(); closeDrv();
+  renderCos(document.getElementById('srch').value||''); renderRoutes();
+  showToast('✓ Registrando en la nube...');
+  syncSaveEntrega(pendId, co.route, true, drv, hora, obs, t, co).then(r => {
+    if(r) showToast('✓ Entrega registrada — '+drv);
+  });
+}
+function undoDel(id,e){
+  e.stopPropagation(); if(!confirm('¿Deshacer esta entrega?'))return;
+  const t=today(); delete S.todayDone[id];
+  const del=(S.deliveries[t]||[]).find(d=>d.companyId===id);
+  if(del)Object.assign(del,{done:false,driver:null,hora:null});
+  save(); renderCos(document.getElementById('srch').value||''); renderRoutes();
+  syncUndoEntrega(id, t);
+}
+
+// ROUTE EDIT MODAL
+let reId=null;
+function openRouteEdit(id){
+  reId=id; const co=getCompanies().find(c=>c.id===id);
+  document.getElementById('reTitle').textContent=co?co.name:'';
+  document.getElementById('reAddr').textContent=co?co.address+', '+co.city:'';
+  document.getElementById('reRoute').value=co.route;
+  document.getElementById('routeEditOverlay').classList.add('open');
+}
+function closeRouteEdit(){document.getElementById('routeEditOverlay').classList.remove('open');reId=null;}
+function saveRouteEdit(){
+  const nr=document.getElementById('reRoute').value;
+  const co=getCompanies().find(c=>c.id===reId);
+  routeOverrides[reId]=nr; save(); closeRouteEdit();
+  showToast('Ruta actualizada: '+co.name+' → '+nr);
+  renderRoutes();
+  syncSaveRuta(reId, nr);
+}
+
+// CALENDAR
+function renderCal(){
+  const ms=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  document.getElementById('calTitle').textContent=ms[S.calMon]+' '+S.calYr;
+  const first=new Date(S.calYr,S.calMon,1).getDay();
+  const days=new Date(S.calYr,S.calMon+1,0).getDate(); const tn=new Date();
+  let h=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'].map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  for(let i=0;i<first;i++)h+=`<div class="cal-day other"></div>`;
+  for(let d=1;d<=days;d++){
+    const ds=S.calYr+'-'+String(S.calMon+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const isTd=tn.getFullYear()===S.calYr&&tn.getMonth()===S.calMon&&tn.getDate()===d;
+    const isSel=S.selDate===ds; const dels=S.deliveries[ds]||[];
+    const routes=[...new Set(dels.map(d=>d.route))];
+    const dots=routes.map(r=>`<div class="ddot" style="background:${RC[r]||'#8b949e'}"></div>`).join('');
+    h+=`<div class="cal-day ${isTd?'today':''} ${isSel?'sel':''}" onclick="selDay('${ds}')">${d}${dots?`<div class="ddots">${dots}</div>`:''}</div>`;
+  }
+  document.getElementById('calGrid').innerHTML=h;
+  if(S.selDate)renderCalDetail(S.selDate);
+}
+function chMon(dir){S.calMon+=dir;if(S.calMon<0){S.calMon=11;S.calYr--;}if(S.calMon>11){S.calMon=0;S.calYr++;}renderCal();}
+function selDay(ds){S.selDate=ds;renderCal();}
+function renderCalDetail(ds){
+  const dels=S.deliveries[ds]||[];
+  let h=`<h3>📦 ${fmtD(ds)}</h3>`;
+  if(!dels.length)h+=`<p style="color:var(--text2);font-size:13px;margin-bottom:14px">No hay entregas programadas.</p>`;
+  dels.forEach((d,i)=>{
+    const co=getCompanies().find(c=>c.id===d.companyId);const col=RC[d.route]||'#8b949e';
+    h+=`<div class="del-item">
+      <div class="del-chk ${d.done?'done':''}" onclick="togCalDel('${ds}',${i})">${d.done?'<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>':''}</div>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600;${d.done?'text-decoration:line-through;color:var(--text2)':''}">${co?co.name:'?'}</div>
+        <div style="font-size:11px;color:var(--text2)">${d.route}${d.driver?' · 👤 '+d.driver:''}${d.hora?' · '+d.hora:''}</div>
+      </div>
+      <div style="display:flex;gap:5px;align-items:center">
+        ${co?`<a href="${mapsUrl(co)}" target="_blank" style="color:var(--blue);font-size:11px;text-decoration:none" title="Ver en Maps">📍</a>`:''}
+        <div style="padding:2px 7px;border-radius:12px;font-size:10px;font-weight:700;background:${col}22;color:${col}">${d.route}</div>
+      </div>
+    </div>`;
+  });
+  h+=`<button class="add-btn" onclick="openCalModal('${ds}')">+ Agregar entrega</button>`;
+  document.getElementById('calDetail').innerHTML=h;
+}
+function togCalDel(ds,idx){
+  if(!S.deliveries[ds])return;
+  const del=S.deliveries[ds][idx];
+  del.done=!del.done;
+  save();renderCal();
+  const co=getCompanies().find(c=>c.id===del.companyId);
+  if(del.done){
+    syncSaveEntrega(del.companyId,del.route,true,del.driver,del.hora,del.note,ds,co);
+  } else {
+    syncUndoEntrega(del.companyId,ds);
+  }
+}
+function openCalModal(ds){
+  document.getElementById('calDate').value=ds;document.getElementById('calRoute').value='';
+  document.getElementById('calCo').innerHTML='<option>— Selecciona ruta primero —</option>';
+  document.getElementById('calObs').value='';document.getElementById('calOverlay').classList.add('open');
+}
+function closeCalModal(){document.getElementById('calOverlay').classList.remove('open');}
+function loadCalCos(){
+  const r=document.getElementById('calRoute').value;const sel=document.getElementById('calCo');
+  if(!r){sel.innerHTML='<option>— Selecciona ruta primero —</option>';return;}
+  sel.innerHTML=byCo(r).map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+}
+function saveCalDel(){
+  const dt=document.getElementById('calDate').value;const r=document.getElementById('calRoute').value;
+  const cid=parseInt(document.getElementById('calCo').value);const obs=document.getElementById('calObs').value.trim();
+  if(!dt||!r||!cid){alert('Completa todos los campos');return;}
+  if(!S.deliveries[dt])S.deliveries[dt]=[];
+  S.deliveries[dt].push({companyId:cid,route:r,done:false,driver:null,hora:null,note:obs,ts:Date.now()});
+  save();closeCalModal();S.selDate=dt;renderCal();
+  const co=getCompanies().find(c=>c.id===cid);
+  syncSaveEntrega(cid,r,false,null,null,obs,dt,co).then(()=>showToast('✓ Entrega programada en la nube'));
+}
+
+// RESUMEN
+function setPeriod(p,btn){S.period=p;document.querySelectorAll('.per-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderSum();}
+function getDates(p){
+  const t=new Date();let start,end;
+  if(p==='week'){const day=t.getDay();start=new Date(t);start.setDate(t.getDate()-day);end=new Date(start);end.setDate(start.getDate()+6);}
+  else{start=new Date(t.getFullYear(),t.getMonth(),1);end=new Date(t.getFullYear(),t.getMonth()+1,0);}
+  const dates=[];let cur=new Date(start);
+  while(cur<=end){dates.push(cur.getFullYear()+'-'+String(cur.getMonth()+1).padStart(2,'0')+'-'+String(cur.getDate()).padStart(2,'0'));cur.setDate(cur.getDate()+1);}
+  return dates;
+}
+function renderSum(){
+  const dates=getDates(S.period);const all=dates.flatMap(dt=>(S.deliveries[dt]||[]).map(d=>({...d,date:dt})));
+  const done=all.filter(d=>d.done).length;const pct=all.length?Math.round(done/all.length*100):0;
+  let h=`<div class="sum-card" style="border-top:3px solid var(--accent)"><h4 style="color:var(--accent)">📊 Resumen General</h4>
+    <div class="sum-row"><span>Total programadas</span><span style="font-weight:700">${all.length}</span></div>
+    <div class="sum-row"><span>Completadas</span><span style="color:var(--green);font-weight:700">${done}</span></div>
+    <div class="sum-row"><span>Pendientes</span><span style="color:var(--red)">${all.length-done}</span></div>
+    <div class="sum-row"><span>Cumplimiento</span><span style="color:var(--accent);font-weight:700">${pct}%</span></div>
+    <div style="margin-top:12px;height:7px;background:var(--border);border-radius:4px;overflow:hidden"><div style="height:100%;width:${pct}%;background:var(--accent);border-radius:4px;transition:width .4s"></div></div>
+  </div>`;
+  ROUTES.forEach(r=>{
+    const rdels=all.filter(d=>d.route===r);const rdone=rdels.filter(d=>d.done).length;const col=RC[r];
+    const comap={};
+    rdels.forEach(d=>{if(!comap[d.companyId])comap[d.companyId]={t:0,d:0,drivers:[]};comap[d.companyId].t++;if(d.done){comap[d.companyId].d++;if(d.driver&&!comap[d.companyId].drivers.includes(d.driver))comap[d.companyId].drivers.push(d.driver);}});
+    let rows=Object.entries(comap).map(([cid,s])=>{
+      const co=getCompanies().find(c=>c.id===parseInt(cid));
+      return `<div class="sum-row"><span>${co?co.name:'?'}</span><span style="display:flex;align-items:center;gap:8px">${s.drivers.length?`<span style="font-size:10px;color:var(--text2)">👤 ${s.drivers.join(', ')}</span>`:''}<span style="color:var(--green);font-weight:700">${s.d}</span><span style="color:var(--text2)">/${s.t}</span></span></div>`;
+    }).join('');
+    if(!rows)rows=`<div class="sum-row"><span style="color:var(--text2);font-size:12px">Sin entregas en este período</span></div>`;
+    h+=`<div class="sum-card"><h4 style="color:${col}"><div style="width:10px;height:10px;border-radius:50%;background:${col}"></div>${r}<span style="margin-left:auto;font-size:18px;color:var(--text2);font-weight:400">${rdone}/${rdels.length}</span></h4>${rows}</div>`;
+  });
+  document.getElementById('sumGrid').innerHTML=h;
+}
+function exportCSV(){
+  const dates=getDates(S.period);const all=dates.flatMap(dt=>(S.deliveries[dt]||[]).map(d=>({...d,date:dt})));
+  let csv='Fecha,Empresa,Dirección,Ciudad,Ruta,Estado,Conductor,Hora,Observación\n';
+  all.forEach(d=>{const co=getCompanies().find(c=>c.id===d.companyId);csv+=`${d.date},"${co?co.name:'?'}","${co?co.address:''}","${co?co.city:''}","${d.route}","${d.done?'Entregado':'Pendiente'}","${d.driver||''}","${d.hora||''}","${d.note||''}"\n`;});
+  const b=new Blob([csv],{type:'text/csv;charset=utf-8;'});const u=URL.createObjectURL(b);
+  const a=document.createElement('a');a.href=u;a.download='IEMS_Entregas.csv';a.click();URL.revokeObjectURL(u);
+}
+
+// CLOSE OVERLAYS ON BG CLICK
+['drvOverlay','routeEditOverlay','calOverlay'].forEach(id=>{
+  document.getElementById(id).addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
+});
+
+// INIT
+loadRemoteData().then(() => renderDash());
+</script>
+</body>
+</html>
